@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
 from db import get_connection
 from otp_sender import send_otp_with_provider
+from flask_cors import CORS  
 
 app = Flask(__name__)
+CORS(app)  
 
 @app.route('/send_otp', methods=['POST'])
 def send_otp():
