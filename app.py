@@ -4,7 +4,7 @@ from otp_sender import send_otp_with_provider
 
 app = Flask(__name__)
 
-@app.route('/send-otp', methods=['POST'])
+@app.route('/send_otp', methods=['POST'])
 def send_otp():
     data = request.get_json()
     phone = data.get("phone")
@@ -24,9 +24,9 @@ def send_otp():
     """, (phone, count))
     request_id = cur.fetchone()[0]
 
-    # Get random `count` providers
+    # Get random `count` providers with headers and payload_template as TEXT
     cur.execute("""
-        SELECT id, name, url, headers, payload_template
+        SELECT id, name, url, headers::TEXT, payload_template::TEXT
         FROM provider_config
         ORDER BY RANDOM()
         LIMIT %s
@@ -39,15 +39,14 @@ def send_otp():
             "error": f"Only {len(providers)} providers available, but {count} requested."
         }), 400
 
-    # Send requests and log
     used_providers = []
     for row in providers:
         provider = {
             "id": row[0],
             "name": row[1],
             "url": row[2],
-            "headers": row[3],
-            "payload_template": row[4]
+            "headers": row[3],  # TEXT
+            "payload_template": row[4]  # TEXT
         }
 
         result = send_otp_with_provider(phone, provider)
@@ -78,5 +77,8 @@ def send_otp():
         "providers_used": used_providers
     })
 
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
